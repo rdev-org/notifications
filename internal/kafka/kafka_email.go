@@ -41,14 +41,14 @@ func (k *KafkaConsumer) Listen(ctx context.Context) error {
 			continue
 		}
 
-		var kPayload KafkaPayload
-		if err := json.Unmarshal(msg.Value, &kPayload); err != nil {
+		var kp KafkaPayload
+		if err := json.Unmarshal(msg.Value, &kp); err != nil {
 			log.Printf("[Kafka Consumer] Failed to unmarshal Kafka Payload: %v", err)
 			continue
 		}
 
-		if err := k.routeEvent(kPayload); err != nil {
-			log.Printf("[Kafka Consumer] Failed to process event [%s]: %v", kPayload.Type, err)
+		if err := k.routeEvent(kp); err != nil {
+			log.Printf("[Kafka Consumer] Failed to process event [%s]: %v", kp.Type, err)
 		}
 	}
 }

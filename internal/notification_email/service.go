@@ -35,23 +35,20 @@ func (s *NotificationEmailService) RegisterEmail(ctx context.Context, req *pb.Re
 
 func (s *NotificationEmailService) ResetPasswordEmail(ctx context.Context, req *pb.ResetPasswordEmailRequest) (*pb.ResetPasswordEmailResponse, error) {
 	reqEmail := req.GetEmail()
-	emailData := k.EmailEvent{
+
+	payloadBytes, err := json.Marshal(k.EmailEvent{
 		Recipient: reqEmail.GetRecipient(),
 		Subject:   reqEmail.GetSubject(),
-	}
-
-	payloadBytes, err := json.Marshal(emailData)
+	})
 	if err != nil {
 		log.Printf("[NotificationEmail] service - failed to marshal email event: %v", err)
 		return nil, status.Error(codes.Internal, "failed to process request")
 	}
 
-	kp := k.KafkaPayload{
+	msgBytes, err := json.Marshal(k.KafkaPayload{
 		Type:    "RESET_PASSWORD",
 		Payload: payloadBytes,
-	}
-
-	msgBytes, err := json.Marshal(kp)
+	})
 	if err != nil {
 		log.Printf("[NotificationEmail] service - failed to marshal kafka payload: %v", err)
 		return nil, status.Error(codes.Internal, "failed to process request")
