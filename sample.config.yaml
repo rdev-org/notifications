@@ -15,9 +15,17 @@ smtp:
   host: "localhost"
   port: "1025"
   from: "no-reply@test.local"
+  user: "no-reply@test.local"
+  pass: "password-here"
 
 jwt_secret_key: "secret_key"
 
 aws:
   region: "ap-southeast-1"
   bucket: "test-bucket"
+
+kafka:
+  brokers:
+    - "localhost:9092"
+  topic: "notification-emails"
+  group_id: "email-workers"
