@@ -41,6 +41,8 @@ func (k *KafkaConsumer) Listen(ctx context.Context) error {
 			continue
 		}
 
+		fmt.Printf("\nKAFKA TOPIC: %s\n\n", msg.Topic)
+
 		var kp KafkaPayload
 		if err := json.Unmarshal(msg.Value, &kp); err != nil {
 			log.Printf("[Kafka Consumer] Failed to unmarshal Kafka Payload: %v", err)
@@ -49,6 +51,10 @@ func (k *KafkaConsumer) Listen(ctx context.Context) error {
 
 		if err := k.routeEvent(kp); err != nil {
 			log.Printf("[Kafka Consumer] Failed to process event [%s]: %v", kp.Type, err)
+		}
+
+		if err := k.reader.CommitMessages(ctx, msg); err != nil {
+			log.Printf("[Kafka Consumer] Failed to commit message offset: %v", err)
 		}
 	}
 }
