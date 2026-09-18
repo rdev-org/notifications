@@ -10,7 +10,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-type KafkaConsumer struct {
+type KafkaEmailConsumer struct {
 	reader *kafka.Reader
 }
 
@@ -24,42 +24,44 @@ type EmailEvent struct {
 	Subject   string `json:"subject"`
 }
 
-func NewEmailConsumer(reader *kafka.Reader) *KafkaConsumer {
-	return &KafkaConsumer{
+func NewEmailConsumer(reader *kafka.Reader) *KafkaEmailConsumer {
+	return &KafkaEmailConsumer{
 		reader: reader,
 	}
 }
 
-func (k *KafkaConsumer) Listen(ctx context.Context) error {
+func (k *KafkaEmailConsumer) Listen(ctx context.Context) error {
 	for {
 		msg, err := k.reader.ReadMessage(ctx)
 		if err != nil {
 			if ctx.Err() != nil {
 				return nil
 			}
-			log.Printf("[Kafka Consumer] Error reading message: %v", err)
+			log.Printf("[Kafka Email Consumer] Error reading message: %v", err)
 			continue
 		}
 
-		fmt.Printf("\nKAFKA TOPIC: %s\n\n", msg.Topic)
+		fmt.Printf("\n[Email Consumer] KAFKA TOPIC: %s\n\n", msg.Topic)
 
-		var kp KafkaPayload
-		if err := json.Unmarshal(msg.Value, &kp); err != nil {
-			log.Printf("[Kafka Consumer] Failed to unmarshal Kafka Payload: %v", err)
-			continue
-		}
+		if msg.Topic == "notification-emails" {
+			var kp KafkaPayload
+			if err := json.Unmarshal(msg.Value, &kp); err != nil {
+				log.Printf("[Kafka Email Consumer] Failed to unmarshal Kafka Payload: %v", err)
+				continue
+			}
 
-		if err := k.routeEvent(kp); err != nil {
-			log.Printf("[Kafka Consumer] Failed to process event [%s]: %v", kp.Type, err)
-		}
+			if err := k.routeEvent(kp); err != nil {
+				log.Printf("[Kafka Email Consumer] Failed to process event [%s]: %v", kp.Type, err)
+			}
 
-		if err := k.reader.CommitMessages(ctx, msg); err != nil {
-			log.Printf("[Kafka Consumer] Failed to commit message offset: %v", err)
+			if err := k.reader.CommitMessages(ctx, msg); err != nil {
+				log.Printf("[Kafka Email Consumer] Failed to commit message offset: %v", err)
+			}
 		}
 	}
 }
 
-func (k *KafkaConsumer) routeEvent(kp KafkaPayload) error {
+func (k *KafkaEmailConsumer) routeEvent(kp KafkaPayload) error {
 	switch kp.Type {
 	case "RESET_PASSWORD", "FORGET_PASSWORD":
 		var event EmailEvent
@@ -71,10 +73,17 @@ func (k *KafkaConsumer) routeEvent(kp KafkaPayload) error {
 			return fmt.Errorf("failed sending email to %s: %w", event.Recipient, err)
 		}
 
-		log.Printf("[Kafka Consumer] Successfully sent %s email to %s", kp.Type, event.Recipient)
+		log.Printf("[Kafka Email Consumer] Successfully sent %s email to %s", kp.Type, event.Recipient)
 		return nil
 
 	default:
 		return fmt.Errorf("unhandled event type: %s", kp.Type)
 	}
+}
+
+func (k *KafkaEmailConsumer) Close() error {
+	if k.reader != nil {
+		return k.reader.Close()
+	}
+	return nil
 }
