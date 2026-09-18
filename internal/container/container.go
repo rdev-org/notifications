@@ -34,7 +34,7 @@ func NewContainer(db *bun.DB, cfgk *config.KafkaConfig) *Container {
 
 	emailReader := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:     cfgk.Brokers,
-		Topic:       "notification-emails",
+		Topic:       "email-notifications",
 		GroupID:     "email-workers",
 		StartOffset: kafka.FirstOffset,
 	})

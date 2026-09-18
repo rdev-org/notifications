@@ -54,7 +54,7 @@ func (s *NotificationEmailService) SendEmail(ctx context.Context, req *pb.SendEm
 	}
 
 	if err := s.kafkaWriter.WriteMessages(ctx, kafka.Message{
-		Topic: "notification-emails",
+		Topic: "email-notifications",
 		Key:   []byte(reqEmail.GetRecipient()),
 		Value: msgBytes,
 	}); err != nil {
@@ -97,7 +97,7 @@ func (s *NotificationEmailService) ResetPasswordEmail(ctx context.Context, req *
 	}
 
 	if err := s.kafkaWriter.WriteMessages(ctx, kafka.Message{
-		Topic: "notification-emails",
+		Topic: "email-notifications",
 		Key:   []byte(reqEmail.GetRecipient()),
 		Value: msgBytes,
 	}); err != nil {

@@ -27,5 +27,7 @@ aws:
 kafka:
   brokers:
     - "localhost:9092"
-  topic: "notification-emails"
+  topic:
+    - "email-notifications"
+    - "in-app-notifications"
   group_id: "email-workers"
