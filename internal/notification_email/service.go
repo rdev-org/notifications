@@ -26,6 +26,48 @@ func NewNotificationEmailService(kw *kafka.Writer) *NotificationEmailService {
 	}
 }
 
+func (s *NotificationEmailService) SendEmail(ctx context.Context, req *pb.SendEmailRequest) (*pb.SendEmailResponse, error) {
+	reqEmail := req.GetEmail()
+	reqCtx := req.GetRequestContext()
+
+	payloadBytes, err := json.Marshal(k.EmailEvent{
+		Recipient: reqEmail.GetRecipient(),
+		Subject:   reqEmail.GetSubject(),
+		Meta: map[string]string{
+			"IpAddress": reqCtx.GetIpAddress(),
+			"UserAgent": reqCtx.GetUserAgent(),
+		},
+		SentAt: time.Now(),
+	})
+	if err != nil {
+		log.Printf("[NotificationEmail] service - failed to marshal email event reset send email: %v", err)
+		return nil, status.Error(codes.Internal, "failed to process request")
+	}
+
+	msgBytes, err := json.Marshal(k.KafkaPayload{
+		Type:    req.Module,
+		Payload: payloadBytes,
+	})
+	if err != nil {
+		log.Printf("[NotificationEmail] service - failed to marshal kafka payload reset send email: %v", err)
+		return nil, status.Error(codes.Internal, "failed to process request")
+	}
+
+	if err := s.kafkaWriter.WriteMessages(ctx, kafka.Message{
+		Topic: "notification-emails",
+		Key:   []byte(reqEmail.GetRecipient()),
+		Value: msgBytes,
+	}); err != nil {
+		log.Printf("[NotificationEmail] failed to write message to kafka reset send email: %v", err)
+		return nil, status.Error(codes.Internal, "failed to queue email message")
+	}
+
+	return &pb.SendEmailResponse{
+		Message: constant.Email,
+		SentAt:  timestamppb.New(time.Now()),
+	}, nil
+}
+
 func (s *NotificationEmailService) RegisterEmail(ctx context.Context, req *pb.RegisterEmailRequest) (*pb.RegisterEmailResponse, error) {
 	return &pb.RegisterEmailResponse{
 		Message: constant.Registration,
@@ -41,7 +83,7 @@ func (s *NotificationEmailService) ResetPasswordEmail(ctx context.Context, req *
 		Subject:   reqEmail.GetSubject(),
 	})
 	if err != nil {
-		log.Printf("[NotificationEmail] service - failed to marshal email event: %v", err)
+		log.Printf("[NotificationEmail] service - failed to marshal email event reset password: %v", err)
 		return nil, status.Error(codes.Internal, "failed to process request")
 	}
 
@@ -50,7 +92,7 @@ func (s *NotificationEmailService) ResetPasswordEmail(ctx context.Context, req *
 		Payload: payloadBytes,
 	})
 	if err != nil {
-		log.Printf("[NotificationEmail] service - failed to marshal kafka payload: %v", err)
+		log.Printf("[NotificationEmail] service - failed to marshal kafka payload reset password: %v", err)
 		return nil, status.Error(codes.Internal, "failed to process request")
 	}
 
@@ -59,7 +101,7 @@ func (s *NotificationEmailService) ResetPasswordEmail(ctx context.Context, req *
 		Key:   []byte(reqEmail.GetRecipient()),
 		Value: msgBytes,
 	}); err != nil {
-		log.Printf("[NotificationEmail] failed to write message to kafka: %v", err)
+		log.Printf("[NotificationEmail] failed to write message to kafka reset password: %v", err)
 		return nil, status.Error(codes.Internal, "failed to queue email message")
 	}
 

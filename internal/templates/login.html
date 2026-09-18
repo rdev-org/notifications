@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ .Subject }}</title>
+  </head>
+  <body
+    style="
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      padding: 20px;
+    "
+  >
+    <div
+      style="
+        max-width: 600px;
+        background: #ffffff;
+        padding: 20px;
+        border-radius: 8px;
+      "
+    >
+      <h2>Hello, {{ .Recipient }}!</h2>
+      <p>We detected a new sign-in to your account.</p>
+
+      {{ if .Body }}
+      <p><strong>Message:</strong> {{ .Body }}</p>
+      {{ end }} {{ if .Meta.IpAddress }}
+      <p><strong>IP Address:</strong> {{ index .Meta "IpAddress" }}</p>
+      {{ end }} {{ if .Meta.UserAgent }}
+      <p><strong>User Agent:</strong> {{ index .Meta "UserAgent" }}</p>
+      {{ end }}
+
+      <p style="font-size: 12px; color: #888888">
+        Sent at: {{ .SentAt.Format "Jan 02, 2006 15:04 MST" }}
+      </p>
+    </div>
+  </body>
+</html>
