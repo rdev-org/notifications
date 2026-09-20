@@ -9,11 +9,11 @@ import (
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 
-	pbEmail "github.com/rdev-org/proto-contracts/pb/notification_email"
+	pb "github.com/rdev-org/proto-contracts/pb/notification"
 
 	"github.com/rdev-org/notifications/internal/config"
 	k "github.com/rdev-org/notifications/internal/kafka"
-	"github.com/rdev-org/notifications/internal/notification_email"
+	"github.com/rdev-org/notifications/internal/service"
 	"github.com/segmentio/kafka-go"
 	"github.com/uptrace/bun"
 )
@@ -106,8 +106,8 @@ func (c *Container) StartKafkaConsumer(ctx context.Context) {
 }
 
 func (c *Container) RegisterNotificationEmailService(grpcServer *grpc.Server) {
-	s := notification_email.NewNotificationEmailService(c.kafkaWriter)
-	pbEmail.RegisterNotificationEmailServiceServer(grpcServer, s)
+	s := service.NewNotificationEmailService(c.kafkaWriter)
+	pb.RegisterNotificationServiceServer(grpcServer, s)
 }
 
 func unaryLogInterceptor(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {

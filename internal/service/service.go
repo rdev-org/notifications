@@ -1,4 +1,4 @@
-package notification_email
+package service
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 
 	"github.com/rdev-org/notifications/internal/constant"
 	k "github.com/rdev-org/notifications/internal/kafka"
-	pb "github.com/rdev-org/proto-contracts/pb/notification_email"
+	pb "github.com/rdev-org/proto-contracts/pb/notification"
 	"github.com/segmentio/kafka-go"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -16,7 +16,7 @@ import (
 )
 
 type NotificationEmailService struct {
-	pb.UnimplementedNotificationEmailServiceServer
+	pb.UnimplementedNotificationServiceServer
 	kafkaWriter *kafka.Writer
 }
 
