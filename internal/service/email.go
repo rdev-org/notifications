@@ -31,11 +31,14 @@ func (s *NotificationEmailService) SendEmail(ctx context.Context, req *pb.SendEm
 	reqCtx := req.GetRequestContext()
 
 	payloadBytes, err := json.Marshal(k.EmailEvent{
-		Recipient: reqEmail.GetRecipient(),
-		Subject:   reqEmail.GetSubject(),
+		RecipientEmail: reqEmail.GetRecipient(),
+		RecipientName:  reqEmail.GetName(),
+		Subject:        reqEmail.GetSubject(),
+		Body:           reqEmail.GetBody(),
 		Meta: map[string]string{
 			"IpAddress": reqCtx.GetIpAddress(),
 			"UserAgent": reqCtx.GetUserAgent(),
+			"ActionUrl": "",
 		},
 		SentAt: time.Now(),
 	})
@@ -79,8 +82,9 @@ func (s *NotificationEmailService) ResetPasswordEmail(ctx context.Context, req *
 	reqEmail := req.GetEmail()
 
 	payloadBytes, err := json.Marshal(k.EmailEvent{
-		Recipient: reqEmail.GetRecipient(),
-		Subject:   reqEmail.GetSubject(),
+		RecipientEmail: reqEmail.GetRecipient(),
+		RecipientName:  reqEmail.GetName(),
+		Subject:        reqEmail.GetSubject(),
 	})
 	if err != nil {
 		log.Printf("[NotificationEmail] service - failed to marshal email event reset password: %v", err)

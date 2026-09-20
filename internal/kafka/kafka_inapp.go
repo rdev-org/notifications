@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -22,10 +23,19 @@ func (k *KafkaInAppConsumer) Listen(ctx context.Context) error {
 	for {
 		msg, err := k.reader.ReadMessage(ctx)
 		if err != nil {
-			if ctx.Err() != nil {
+			if ctx.Err() != nil || isEOFOrClosedErr(err) {
+				log.Println("[Kafka InApp Consumer] Consumer stopped cleanly.")
 				return nil
 			}
+
 			log.Printf("[Kafka InApp Consumer] Error reading message: %v", err)
+
+			select {
+			case <-time.After(1 * time.Second):
+			case <-ctx.Done():
+				return nil
+			}
+
 			continue
 		}
 

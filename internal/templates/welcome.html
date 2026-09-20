@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ .Subject }}</title>
+  </head>
+  <body
+    style="
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      padding: 20px;
+      margin: 0;
+    "
+  >
+    <div
+      style="
+        max-width: 600px;
+        margin: 0 auto;
+        background: #ffffff;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      "
+    >
+      <h2 style="color: #333333; margin-top: 0">
+        Welcome, {{ .RecipientName }}! 🎉
+      </h2>
+
+      <p style="color: #555555; line-height: 1.6">
+        Thank you for creating an account with us. We're thrilled to have you on
+        board!
+      </p>
+
+      {{ if .Body }}
+      <p style="color: #555555; line-height: 1.6">{{ .Body }}</p>
+      {{ end }}
+
+      <div style="text-align: center; margin: 30px 0">
+        <a
+          href="{{ .Meta.ActionUrl }}"
+          style="
+            background-color: #007bff;
+            color: #ffffff;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            display: inline-block;
+          "
+        >
+          Get Started
+        </a>
+      </div>
+
+      <p style="color: #555555; line-height: 1.6">
+        If you have any questions, feel free to reply to this email or reach out
+        to our support team.
+      </p>
+
+      <hr style="border: none; border-top: 1px solid #eeeeee; margin: 20px 0" />
+
+      <p style="font-size: 12px; color: #888888; text-align: center">
+        Sent at: {{ .SentAt.Format "Jan 02, 2006 15:04 MST" }}
+      </p>
+    </div>
+  </body>
+</html>

@@ -91,14 +91,14 @@ func (c *Container) Close() {
 
 func (c *Container) StartKafkaConsumer(ctx context.Context) {
 	go func() {
-		log.Println("[Kafka] Email worker started listening...")
+		log.Println("[Kafka Email Consumer] started listening...")
 		if err := c.emailConsumer.Listen(ctx); err != nil {
 			log.Printf("[Kafka] Email consumer error: %v", err)
 		}
 	}()
 
 	go func() {
-		log.Println("[Kafka] In-App worker started listening...")
+		log.Println("[Kafka InApp Consumer] started listening...")
 		if err := c.inAppConsumer.Listen(ctx); err != nil {
 			log.Printf("[Kafka] In-App consumer error: %v", err)
 		}

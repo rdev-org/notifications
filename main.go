@@ -19,7 +19,6 @@ func main() {
 	c := container.NewContainer(db, &appConfig.Kafka)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 	c.StartKafkaConsumer(ctx)
 
 	grpcServer := c.Initialize()
@@ -31,6 +30,7 @@ func main() {
 	}
 
 	app.RunGRPC(srvCfg, grpcServer, func() {
+		cancel()
 		c.Close()
 	})
 }

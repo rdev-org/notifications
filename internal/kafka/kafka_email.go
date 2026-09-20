@@ -3,8 +3,12 @@ package kafka
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"log"
+	"net"
+	"strings"
 	"time"
 
 	"github.com/rdev-org/notifications/internal/email"
@@ -21,11 +25,12 @@ type KafkaPayload struct {
 }
 
 type EmailEvent struct {
-	Recipient string            `json:"recipient"`
-	Subject   string            `json:"subject"`
-	Body      string            `json:"body"`
-	Meta      map[string]string `json:"meta"`
-	SentAt    time.Time         `json:"sent_at"`
+	RecipientEmail string            `json:"recipient_email"`
+	RecipientName  string            `json:"recipient_name"`
+	Subject        string            `json:"subject"`
+	Body           string            `json:"body"`
+	Meta           map[string]string `json:"meta"`
+	SentAt         time.Time         `json:"sent_at"`
 }
 
 func NewEmailConsumer(reader *kafka.Reader) *KafkaEmailConsumer {
@@ -38,10 +43,19 @@ func (k *KafkaEmailConsumer) Listen(ctx context.Context) error {
 	for {
 		msg, err := k.reader.ReadMessage(ctx)
 		if err != nil {
-			if ctx.Err() != nil {
+			if ctx.Err() != nil || isEOFOrClosedErr(err) {
+				log.Println("[Kafka Email Consumer] Consumer stopped cleanly.")
 				return nil
 			}
+
 			log.Printf("[Kafka Email Consumer] Error reading message: %v", err)
+
+			select {
+			case <-time.After(1 * time.Second):
+			case <-ctx.Done():
+				return nil
+			}
+
 			continue
 		}
 
@@ -71,6 +85,9 @@ func (k *KafkaEmailConsumer) routeEvent(kp KafkaPayload) error {
 	case "LOGIN_EMAIL":
 		return k.parseEmail(kp, "LOGIN_EMAIL")
 
+	case "REGISTER_EMAIL":
+		return k.parseEmail(kp, "REGISTER_EMAIL")
+
 	default:
 		return fmt.Errorf("unhandled event type: %s", kp.Type)
 	}
@@ -84,16 +101,18 @@ func (k *KafkaEmailConsumer) parseEmail(kp KafkaPayload, kpType string) error {
 	var err error
 	switch kpType {
 	case "LOGIN_EMAIL":
-		err = email.SendTemplateEmail(event.Recipient, event.Subject, "login.html", event)
+		err = email.SendTemplateEmail(event.RecipientEmail, event.Subject, "login.html", event)
+	case "REGISTER_EMAIL":
+		err = email.SendTemplateEmail(event.RecipientEmail, event.Subject, "welcome.html", event)
 	case "RESET_PASSWORD", "FORGET_PASSWORD":
-		err = email.SendEmail(event.Recipient, event.Subject, "Reset your password")
+		err = email.SendEmail(event.RecipientEmail, event.Subject, "Reset your password")
 	}
 
 	if err != nil {
-		return fmt.Errorf("failed sending email to %s: %w", event.Recipient, err)
+		return fmt.Errorf("failed sending email to %s: %w", event.RecipientEmail, err)
 	}
 
-	log.Printf("[Kafka Email Consumer] Successfully sent %s email to %s", kp.Type, event.Recipient)
+	log.Printf("[Kafka Email Consumer] Successfully sent %s email to %s", kp.Type, event.RecipientEmail)
 	return nil
 }
 
@@ -102,4 +121,15 @@ func (k *KafkaEmailConsumer) Close() error {
 		return k.reader.Close()
 	}
 	return nil
+}
+
+func isEOFOrClosedErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, io.EOF) || errors.Is(err, net.ErrClosed) {
+		return true
+	}
+	errStr := err.Error()
+	return strings.Contains(errStr, "EOF") || strings.Contains(errStr, "use of closed network connection")
 }
