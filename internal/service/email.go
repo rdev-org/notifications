@@ -30,7 +30,7 @@ func (s *NotificationEmailService) SendEmail(ctx context.Context, req *pb.SendEm
 	reqEmail := req.GetEmail()
 	reqCtx := req.GetRequestContext()
 
-	payloadBytes, err := json.Marshal(k.EmailEvent{
+	emailEvent := k.EmailEvent{
 		RecipientEmail: reqEmail.GetRecipient(),
 		RecipientName:  reqEmail.GetName(),
 		Subject:        reqEmail.GetSubject(),
@@ -38,10 +38,15 @@ func (s *NotificationEmailService) SendEmail(ctx context.Context, req *pb.SendEm
 		Meta: map[string]string{
 			"IpAddress": reqCtx.GetIpAddress(),
 			"UserAgent": reqCtx.GetUserAgent(),
-			"ActionUrl": "",
 		},
 		SentAt: time.Now(),
-	})
+	}
+
+	if len(reqEmail.GetMeta()) > 0 && reqEmail.GetMeta()["Token"] != "" {
+		emailEvent.Meta["Token"] = reqEmail.GetMeta()["Token"]
+	}
+
+	payloadBytes, err := json.Marshal(emailEvent)
 	if err != nil {
 		log.Printf("[NotificationEmail] service - failed to marshal email event reset send email: %v", err)
 		return nil, status.Error(codes.Internal, "failed to process request")

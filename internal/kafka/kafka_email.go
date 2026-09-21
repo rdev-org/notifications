@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rdev-org/notifications/internal/constant"
 	"github.com/rdev-org/notifications/internal/email"
 	"github.com/segmentio/kafka-go"
 )
@@ -66,7 +67,7 @@ func (k *KafkaEmailConsumer) Listen(ctx context.Context) error {
 				continue
 			}
 
-			if err := k.routeEvent(kp); err != nil {
+			if err := k.routeEvent(kp, kp.Type); err != nil {
 				log.Printf("[Kafka Email Consumer] Failed to process event [%s]: %v", kp.Type, err)
 			}
 
@@ -77,22 +78,7 @@ func (k *KafkaEmailConsumer) Listen(ctx context.Context) error {
 	}
 }
 
-func (k *KafkaEmailConsumer) routeEvent(kp KafkaPayload) error {
-	switch kp.Type {
-	case "RESET_PASSWORD", "FORGET_PASSWORD":
-		return k.parseEmail(kp, kp.Type)
-
-	case "LOGIN_EMAIL":
-		return k.parseEmail(kp, "LOGIN_EMAIL")
-
-	case "REGISTER_EMAIL":
-		return k.parseEmail(kp, "REGISTER_EMAIL")
-
-	default:
-		return fmt.Errorf("unhandled event type: %s", kp.Type)
-	}
-}
-func (k *KafkaEmailConsumer) parseEmail(kp KafkaPayload, kpType string) error {
+func (k *KafkaEmailConsumer) routeEvent(kp KafkaPayload, kpType string) error {
 	var event EmailEvent
 	if err := json.Unmarshal(kp.Payload, &event); err != nil {
 		return fmt.Errorf("invalid EmailEvent payload: %w", err)
@@ -103,6 +89,10 @@ func (k *KafkaEmailConsumer) parseEmail(kp KafkaPayload, kpType string) error {
 	case "LOGIN_EMAIL":
 		err = email.SendTemplateEmail(event.RecipientEmail, event.Subject, "login.html", event)
 	case "REGISTER_EMAIL":
+		event.Meta["ActionUrl"] = fmt.Sprintf("%s?token=%s", constant.RegisterURL, event.Meta["Token"])
+		err = email.SendTemplateEmail(event.RecipientEmail, event.Subject, "registration.html", event)
+	case "WELCOME_EMAIL":
+		event.Meta["ActionUrl"] = constant.WelcomeURL
 		err = email.SendTemplateEmail(event.RecipientEmail, event.Subject, "welcome.html", event)
 	case "RESET_PASSWORD", "FORGET_PASSWORD":
 		err = email.SendEmail(event.RecipientEmail, event.Subject, "Reset your password")
