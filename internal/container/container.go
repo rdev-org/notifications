@@ -54,11 +54,7 @@ func NewContainer(db *bun.DB, cfgk *config.KafkaConfig) *Container {
 	}
 }
 
-func (c *Container) Initialize() *grpc.Server {
-	grpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(unaryLogInterceptor),
-	)
-
+func (c *Container) Initialize(grpcServer *grpc.Server) *grpc.Server {
 	c.RegisterNotificationEmailService(grpcServer)
 
 	reflection.Register(grpcServer)

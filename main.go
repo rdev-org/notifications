@@ -21,7 +21,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.StartKafkaConsumer(ctx)
 
-	grpcServer := c.Initialize()
+	grpcServer := c.Initialize(app.NewGRPCServer())
 
 	srvCfg := app.ServerConfig{
 		Name: "Notification",
